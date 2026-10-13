@@ -1,0 +1,7 @@
+{
+  "name":"scope-guard","version":"0.1.0","description":"Verify signed testing scope and durably record offline destination decisions.",
+  "type":"module","license":"MIT","engines":{"node":">=22"},
+  "bin":{"scope-guard":"./bin/scope-guard.mjs"},"exports":{".":"./src/index.mjs"},
+  "scripts":{"lint":"node scripts/lint.mjs","test":"node --test test/*.test.mjs","check":"node scripts/check.mjs"},
+  "files":["bin","src","docs","examples","README.md","CHANGELOG.md","LICENSE"]
+}
