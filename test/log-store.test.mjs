@@ -4,21 +4,8 @@ import * as fs from 'node:fs/promises';
 import { appendDecisions } from '../src/log-store.mjs';
 import { verifyLogBytes } from '../src/log-records.mjs';
 import { makeBudget } from '../src/budget.mjs';
-import { withFixture } from './support.mjs';
+import { withFixture, faultIo } from './support.mjs';
 export function options(paths) {return {logPath:paths.logPath,protectedInputs:[paths.scopePath,paths.signaturePath,paths.publicKeyPath,paths.requestPath],registry:new Map(),decisions:[{targetSourceOrdinal:1,decision:'allow',ruleId:'target-allowed'}],context:{checkTime:'2026-10-13T10:00:00Z',runId:'c84b1a10-3112-4a81-a0b3-000000000001',scopeDigest:'a'.repeat(64),keyFingerprint:'b'.repeat(64)},budget:makeBudget(()=>0)};}
-export function faultIo(method,behavior) {
-  let invoked=false;
-  return {...fs,open:async(...args)=>{
-    const handle=await fs.open(...args);
-    return new Proxy(handle,{get(target,key){
-      const value=target[key];if(typeof value!=='function')return value;
-      if(key===method&&String(args[0]).endsWith('decisions.jsonl'))return async(...call)=>{
-        if(!invoked){invoked=true;return behavior(target,...call);}return value.apply(target,call);
-      };
-      return value.bind(target);
-    }});
-  }};
-}
 test('real appends retain records and return durable count/head',()=>withFixture(async({paths})=>{
   const first=await appendDecisions(options(paths));assert.equal(first.recordCount,1);
   const second=await appendDecisions(options(paths));assert.equal(second.recordCount,2);assert.notEqual(first.head,second.head);

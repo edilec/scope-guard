@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
+import * as fs from 'node:fs/promises';
 export const packageRoot = dirname(dirname(fileURLToPath(import.meta.url)));
 export const clock = () => 0;
 export function validScope() { return {
@@ -32,4 +33,17 @@ export function cli(args, options={}) {
   const result=spawnSync(process.execPath,[...(options.preload?['--import',join(packageRoot,'test/offline-preload.mjs')]:[]),join(packageRoot,'bin/scope-guard.mjs'),...args],{cwd:packageRoot,encoding:'utf8',timeout:30000,...options.spawn});
   if(result.error) throw result.error;
   return {code:result.status,stdout:result.stdout,stderr:result.stderr,report:result.stdout?JSON.parse(result.stdout):null};
+}
+export function faultIo(method,behavior) {
+  let invoked=false;
+  return {...fs,open:async(...args)=>{
+    const handle=await fs.open(...args);
+    return new Proxy(handle,{get(target,key){
+      const value=target[key];if(typeof value!=='function')return value;
+      if(key===method&&String(args[0]).endsWith('decisions.jsonl'))return async(...call)=>{
+        if(!invoked){invoked=true;return behavior(target,...call);}return value.apply(target,call);
+      };
+      return value.bind(target);
+    }});
+  }};
 }
