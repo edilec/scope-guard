@@ -30,3 +30,9 @@ test('log reports do not use the empty-target vacuous check',()=>{
   assert.equal(exitFor(makeLogReport({complete:true,valid:true,recordCount:3,head:'a'.repeat(64),findings:[]})),0);
   assert.equal(exitFor(makeLogReport({complete:true,valid:false,recordCount:2,head:null,findings:[finding('log-chain-invalid')]})),1);
 });
+test('logical provenance includes a root pointer for whole-input failures',()=>{
+  for(const [id,role] of [['scope-signature-invalid','@signature'],['public-key-invalid','@public-key'],['log-io-failed','@log']]) {
+    const report=makeReport([{targetSourceOrdinal:1,decision:'unknown',ruleId:id}],[finding(id)]);
+    assert.deepEqual(report.findings[0].location,{file:role,pointer:''});
+  }
+});

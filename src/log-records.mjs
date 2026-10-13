@@ -13,7 +13,8 @@ function validRecord(r) {
   if(!r||typeof r!=='object'||Array.isArray(r)||Object.keys(r).length!==10||![...bodyKeys,'recordHash'].every(k=>Object.hasOwn(r,k)))return false;
   if(!Number.isSafeInteger(r.sequence)||r.sequence<1||!Number.isSafeInteger(r.targetSourceOrdinal)||r.targetSourceOrdinal<0||r.targetSourceOrdinal>1000||typeof r.runId!=='string'||!UUID.test(r.runId))return false;
   try{utcSeconds(r.checkTime);}catch{return false;}
-  const rule=RULES[r.ruleId];if(!rule||rule.disposition!==r.decision||!['allow','deny','unknown'].includes(r.decision))return false;
+  if(typeof r.ruleId!=='string'||!Object.hasOwn(RULES,r.ruleId))return false;
+  const rule=RULES[r.ruleId];if(rule.disposition!==r.decision||!['allow','deny','unknown'].includes(r.decision))return false;
   if(r.decision!=='unknown'&&r.targetSourceOrdinal===0)return false;
   if(!hex(r.previousRecordHash)||!hex(r.recordHash))return false;
   return [r.scopeDigest,r.keyFingerprint].every(x=>hex(x)||(x===null&&r.decision==='unknown'));

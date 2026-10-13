@@ -18,10 +18,10 @@ export async function appendDecisions({logPath,protectedInputs,registry,decision
     try{lockHandle=await io.open(lockPath,constants.O_WRONLY|constants.O_CREAT|constants.O_EXCL|constants.O_NOFOLLOW,0o600);lockOwned=true;}
     catch(e){if(e.code==='EEXIST')throw new EvidenceError('log-busy');throw e;}
     lockIdentity=await lockHandle.stat({bigint:true});await guarded(target);
-    const existing=await inspected(io,target);let created=false;
+    const existing=await inspected(io,target);
     const flags=constants.O_RDWR|constants.O_APPEND|constants.O_NOFOLLOW|constants.O_NONBLOCK;
     if(existing)logHandle=await io.open(target,flags);
-    else {logHandle=await io.open(target,flags|constants.O_CREAT|constants.O_EXCL,0o600);created=true;}
+    else logHandle=await io.open(target,flags|constants.O_CREAT|constants.O_EXCL,0o600);
     const identity=await logHandle.stat({bigint:true});
     if(!identity.isFile()||identity.nlink!==1n||(existing&&!same(identity,existing)))unsafe();
     const checkInputs=async()=>{
@@ -46,7 +46,7 @@ export async function appendDecisions({logPath,protectedInputs,registry,decision
     /* guard:log-file-sync:start */
     await logHandle.sync();
     /* guard:log-file-sync:end */
-    if(created){const directory=await io.open(parent,constants.O_RDONLY);try{await directory.sync();}finally{await directory.close();}}
+    const directory=await io.open(parent,constants.O_RDONLY);try{await directory.sync();}finally{await directory.close();}
     await logHandle.close();logHandle=null;
     const lockNow=await inspected(io,lockPath);if(!lockNow||!same(lockNow,lockIdentity)||lockNow.isSymbolicLink())unsafe();
     await lockHandle.close();lockHandle=null;await io.unlink(lockPath);lockOwned=false;

@@ -54,6 +54,6 @@ export async function verifyLog({logPath,expected=null,clock}) {
   const budget=makeBudget(clock);
   try {
     const bytes=await readBytes(logPath,'@log',LOG_BYTES,new Map(),budget);
-    return makeLogReport(verifyLogBytes(bytes,budget,expected));
-  }catch(e){const p=problem(e,'@log');return makeLogReport({valid:false,complete:false,recordCount:0,head:null,findings:[finding(p.ruleId,p.pointer,p.role)]});}
+    const result=verifyLogBytes(bytes,budget,expected);budget.checkpoint();return makeLogReport(result);
+  }catch(e){const p=problem(e,'@log');return makeLogReport({valid:false,complete:false,recordCount:0,head:null,findings:[finding(p.ruleId,p.pointer,p.ruleId==='evaluation-deadline'?'@log':p.role)]});}
 }

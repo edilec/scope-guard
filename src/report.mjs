@@ -5,7 +5,7 @@ const roles=new Set(['@scope','@signature','@public-key','@request','@log']);
 export function finding(ruleId,pointer='',role=RULES[ruleId]?.role) {
   const rule=RULES[ruleId];
   if(!rule||!roles.has(role)||typeof pointer!=='string'||forbidden.test(pointer))throw new Error('internal-rule');
-  return {ruleId,severity:rule.severity,message:rule.message,location:{file:role,...(pointer?{pointer}:{})}};
+  return {ruleId,severity:rule.severity,message:rule.message,location:{file:role,pointer}};
 }
 function envelope(status,rows,findings) {
   const ordered=findings.toSorted((a,b)=>byCodeUnit(a.location.file,b.location.file)||byCodeUnit(a.location.pointer??'',b.location.pointer??'')||byCodeUnit(a.ruleId,b.ruleId));
