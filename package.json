@@ -3,5 +3,8 @@
   "type":"module","license":"MIT","engines":{"node":">=22"},
   "bin":{"scope-guard":"./bin/scope-guard.mjs"},"exports":{".":"./src/index.mjs"},
   "scripts":{"lint":"node scripts/lint.mjs","test":"node --test test/*.test.mjs","check":"node scripts/check.mjs"},
-  "files":["bin","src","docs","examples","README.md","CHANGELOG.md","LICENSE"]
+  "files":["bin","src","docs","examples","README.md","CHANGELOG.md","LICENSE"],
+  "author":"Edilec Private Limited",
+  "repository":{"type":"git","url":"git+https://github.com/edilec/scope-guard.git"},
+  "keywords":["scope","offline","ed25519","audit","testing"]
 }

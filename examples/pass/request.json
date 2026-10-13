@@ -1,0 +1,1 @@
+{"schemaVersion":"1","runId":"c84b1a10-3112-4a81-a0b3-000000000001","decisionTime":"2026-10-13T10:00:00Z","requests":[{"target":"api.example.invalid","destinationIp":"192.0.2.20","destinationIpCheckedAt":"2026-10-13T10:00:00Z"}]}
