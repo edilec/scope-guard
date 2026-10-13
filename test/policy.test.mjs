@@ -28,3 +28,10 @@ test('shared request schema and limit never produce a vacuous allow',()=>{
   r.requests=Array.from({length:1001},()=>validRequest().requests[0]);assert.throws(()=>compileRequests(r,b()),e=>e.ruleId==='request-limit');
   assert.throws(()=>compileRequests({...validRequest(),extra:true},b()),e=>e.ruleId==='request-schema-invalid');
 });
+test('contact and window collection bounds accept N and reject N+1',()=>{
+  const s=validScope();s.emergencyContacts=Array.from({length:100},()=>({name:'Fixture Operator',channel:'fixture-only'}));
+  assert.doesNotThrow(()=>compileScope(s,b()));s.emergencyContacts.push({name:'Fixture Operator',channel:'fixture-only'});assert.throws(()=>compileScope(s,b()),e=>e.ruleId==='scope-schema-invalid');
+  const windows=validScope();const start=Date.parse(windows.validFrom);
+  windows.testWindows=Array.from({length:1000},(_,i)=>({start:new Date(start+i*2000).toISOString().replace('.000Z','Z'),end:new Date(start+i*2000+1000).toISOString().replace('.000Z','Z')}));
+  assert.doesNotThrow(()=>compileScope(windows,b()));windows.testWindows.push({start:'2026-10-13T16:00:00Z',end:'2026-10-13T16:00:01Z'});assert.throws(()=>compileScope(windows,b()),e=>e.ruleId==='scope-schema-invalid');
+});

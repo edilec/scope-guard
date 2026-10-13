@@ -18,6 +18,7 @@ test('fully evidenced allow stays silent; unknown dominates denial',()=>{
   const mixed=makeReport([row('deny','excluded-ip'),row('unknown','destination-ip-missing',2)],[finding('destination-ip-missing')]);
   assert.equal(exitFor(mixed),2);assert.equal(mixed.decision,'unknown');
   assert.equal(exitFor(makeReport([], [finding('no-requests')])),2);
+  assert.equal(exitFor(makeReport([row('deny','excluded-ip')],[finding('log-io-failed')])),2);
   assert.throws(()=>finding('unregistered'),/internal-rule/);
 });
 test('code-unit report order differs from locale collation',()=>{

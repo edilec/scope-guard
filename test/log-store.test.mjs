@@ -39,3 +39,22 @@ test('held exclusive lock makes concurrent writer unknown; retry preserves seque
   await assert.rejects(()=>appendDecisions(options(paths)),e=>e.ruleId==='log-busy');release();await first;
   const retry=await appendDecisions(options(paths));assert.equal(retry.recordCount,2);
 }));
+test('parent durability and owned-lock cleanup failures cannot produce completion',async()=>{
+  await withFixture(async({dir,paths})=>{
+    const io={...fs,open:async(...args)=>{const h=await fs.open(...args);return new Proxy(h,{get(target,key){const value=target[key];if(key==='sync'&&String(args[0])===awaitableRealDir)return async()=>{throw new Error('directory sync failed');};return typeof value==='function'?value.bind(target):value;}});}};
+    const awaitableRealDir=await fs.realpath(dir);await assert.rejects(()=>appendDecisions({...options(paths),io}),e=>e.ruleId==='log-durability-failed');
+  });
+  await withFixture(async({paths})=>{
+    const io={...fs,unlink:async path=>{if(String(path).endsWith('.lock'))throw new Error('cleanup failed');return fs.unlink(path);}};
+    await assert.rejects(()=>appendDecisions({...options(paths),io}),e=>e.ruleId==='log-durability-failed');
+    assert.equal((await fs.stat(paths.logPath+'.lock')).isFile(),true);
+  });
+});
+test('symlink substitution between check and open never overwrites the input',()=>withFixture(async({paths})=>{
+  const before=await fs.readFile(paths.scopePath);let replaced=false;
+  const io={...fs,open:async(...args)=>{
+    if(String(args[0]).endsWith('decisions.jsonl')&&!replaced){replaced=true;await fs.symlink(paths.scopePath,args[0]);}
+    return fs.open(...args);
+  }};
+  await assert.rejects(()=>appendDecisions({...options(paths),io}),e=>['log-io-failed','destination-unsafe'].includes(e.ruleId));assert.deepEqual(await fs.readFile(paths.scopePath),before);
+}));

@@ -30,9 +30,16 @@ test('every complete policy refusal has CLI exit 1 with an allow control',async(
     const r=validRequest();modify(r);await withFixture(({paths})=>{const out=cli(argsFor(paths));assert.equal(out.code,1);assert.equal(out.report.decisions[0].ruleId,rule);},signedFixture(validScope(),r));
   }
 });
-test('signature changes and self-declared key cannot authorize targets',()=>withFixture(async({paths,fixture})=>{
+test('byte-different semantically equal scope cannot authorize targets',()=>withFixture(async({paths,fixture})=>{
   await writeFile(paths.scopePath,Buffer.from(JSON.stringify(JSON.parse(fixture.scopeBytes),null,2)));
   const out=cli(argsFor(paths));assert.equal(out.code,1);assert.equal(out.report.decisions[0].ruleId,'scope-signature-invalid');
+}));
+test('a correctly signed document with its own key field is still unsupported',()=>withFixture(({paths})=>{
+  const out=cli(argsFor(paths));assert.equal(out.code,2);assert.equal(out.report.decision,'unknown');assert.ok(out.report.findings.some(f=>f.ruleId==='scope-schema-invalid'));
+},signedFixture({...validScope(),publicKey:'untrusted-self-declaration'})));
+test('identical signed bytes and initial log state produce byte-identical stdout',()=>withFixture(({dir,paths})=>{
+  const first=cli(argsFor({...paths,logPath:join(dir,'first.jsonl')})),second=cli(argsFor({...paths,logPath:join(dir,'second.jsonl')}));
+  assert.equal(first.code,0);assert.equal(second.code,0);assert.equal(first.stdout,second.stdout);
 }));
 test('library audit faults convert every provisional allow into unknown',async()=>{
   for(const method of ['sync','write'])await withFixture(async({paths})=>{
@@ -41,3 +48,7 @@ test('library audit faults convert every provisional allow into unknown',async()
   });
   await withFixture(async({paths})=>{const out=await check({...paths,clock});assert.equal(out.decision,'allow');assert.equal((await verifyLog({logPath:paths.logPath,expected:out.audit,clock})).status,'pass');});
 });
+test('log failure remains incomplete even when every target was already denied',()=>withFixture(async({paths})=>{
+  const r=validRequest();r.requests=[{target:'192.0.2.129'}];await writeFile(paths.requestPath,JSON.stringify(r));await writeFile(paths.logPath,'broken');
+  const out=cli(argsFor(paths));assert.equal(out.code,2);assert.equal(out.report.status,'incomplete');assert.equal(out.report.decisions[0].decision,'deny');assert.ok(out.report.findings.some(f=>f.ruleId==='log-existing-invalid'));
+}));
